@@ -1,0 +1,259 @@
+syntax = "proto3";
+
+package atlasfs.metadata;
+
+option java_multiple_files = true;
+option java_package = "com.atlasfs.proto";
+option java_outer_classname = "MetadataProto";
+
+// Common data types
+
+message FileAttributes {
+  uint64 inode = 1;
+  FileType type = 2;
+  uint32 mode = 3;      // Permission bits
+  uint32 uid = 4;       // User ID
+  uint32 gid = 5;       // Group ID
+  uint64 size = 6;      // File size in bytes
+  uint64 atime = 7;     // Access time (Unix timestamp)
+  uint64 mtime = 8;     // Modification time
+  uint64 ctime = 9;     // Change time
+  uint32 nlink = 10;    // Number of hard links
+}
+
+enum FileType {
+  REGULAR = 0;
+  DIRECTORY = 1;
+  SYMLINK = 2;
+  BLOCK_DEVICE = 3;
+  CHAR_DEVICE = 4;
+  FIFO = 5;
+  SOCKET = 6;
+}
+
+message DirectoryEntry {
+  string name = 1;
+  uint64 inode = 2;
+  FileType type = 3;
+}
+
+// Metadata Service - Core namespace operations
+
+service MetadataService {
+  // Lookup operations
+  rpc Lookup(LookupRequest) returns (LookupResponse);
+  rpc GetAttr(GetAttrRequest) returns (GetAttrResponse);
+  rpc SetAttr(SetAttrRequest) returns (SetAttrResponse);
+  
+  // Directory operations
+  rpc ReadDir(ReadDirRequest) returns (stream DirectoryEntry);
+  rpc MkDir(MkDirRequest) returns (MkDirResponse);
+  rpc RmDir(RmDirRequest) returns (RmDirResponse);
+  
+  // File operations
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Unlink(UnlinkRequest) returns (UnlinkResponse);
+  rpc Rename(RenameRequest) returns (RenameResponse);
+  
+  // Link operations
+  rpc Link(LinkRequest) returns (LinkResponse);
+  rpc Symlink(SymlinkRequest) returns (SymlinkResponse);
+  rpc ReadLink(ReadLinkRequest) returns (ReadLinkResponse);
+  
+  // Extended attributes
+  rpc GetXAttr(GetXAttrRequest) returns (GetXAttrResponse);
+  rpc SetXAttr(SetXAttrRequest) returns (SetXAttrResponse);
+  rpc ListXAttr(ListXAttrRequest) returns (ListXAttrResponse);
+  rpc RemoveXAttr(RemoveXAttrRequest) returns (RemoveXAttrResponse);
+  
+  // Locking and consistency
+  rpc AcquireLock(AcquireLockRequest) returns (AcquireLockResponse);
+  rpc ReleaseLock(ReleaseLockRequest) returns (ReleaseLockResponse);
+}
+
+// Request/Response messages
+
+message LookupRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+}
+
+message LookupResponse {
+  FileAttributes attributes = 1;
+}
+
+message GetAttrRequest {
+  uint64 inode = 1;
+}
+
+message GetAttrResponse {
+  FileAttributes attributes = 1;
+}
+
+message SetAttrRequest {
+  uint64 inode = 1;
+  optional uint32 mode = 2;
+  optional uint32 uid = 3;
+  optional uint32 gid = 4;
+  optional uint64 size = 5;
+  optional uint64 atime = 6;
+  optional uint64 mtime = 7;
+}
+
+message SetAttrResponse {
+  FileAttributes attributes = 1;
+}
+
+message ReadDirRequest {
+  uint64 inode = 1;
+  optional uint32 offset = 2;
+  optional uint32 limit = 3;
+}
+
+message MkDirRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+  uint32 mode = 3;
+  uint32 uid = 4;
+  uint32 gid = 5;
+}
+
+message MkDirResponse {
+  FileAttributes attributes = 1;
+}
+
+message RmDirRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+}
+
+message RmDirResponse {
+  bool success = 1;
+}
+
+message CreateRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+  uint32 mode = 3;
+  uint32 uid = 4;
+  uint32 gid = 5;
+  uint32 flags = 6;  // O_CREAT, O_EXCL, etc.
+}
+
+message CreateResponse {
+  FileAttributes attributes = 1;
+}
+
+message UnlinkRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+}
+
+message UnlinkResponse {
+  bool success = 1;
+}
+
+message RenameRequest {
+  uint64 old_parent_inode = 1;
+  string old_name = 2;
+  uint64 new_parent_inode = 3;
+  string new_name = 4;
+  uint32 flags = 5;  // RENAME_NOREPLACE, RENAME_EXCHANGE, etc.
+}
+
+message RenameResponse {
+  bool success = 1;
+}
+
+message LinkRequest {
+  uint64 inode = 1;
+  uint64 new_parent_inode = 2;
+  string new_name = 3;
+}
+
+message LinkResponse {
+  FileAttributes attributes = 1;
+}
+
+message SymlinkRequest {
+  uint64 parent_inode = 1;
+  string name = 2;
+  string target = 3;
+  uint32 uid = 4;
+  uint32 gid = 5;
+}
+
+message SymlinkResponse {
+  FileAttributes attributes = 1;
+}
+
+message ReadLinkRequest {
+  uint64 inode = 1;
+}
+
+message ReadLinkResponse {
+  string target = 1;
+}
+
+message GetXAttrRequest {
+  uint64 inode = 1;
+  string name = 2;
+}
+
+message GetXAttrResponse {
+  bytes value = 1;
+}
+
+message SetXAttrRequest {
+  uint64 inode = 1;
+  string name = 2;
+  bytes value = 3;
+  uint32 flags = 4;  // XATTR_CREATE, XATTR_REPLACE
+}
+
+message SetXAttrResponse {
+  bool success = 1;
+}
+
+message ListXAttrRequest {
+  uint64 inode = 1;
+}
+
+message ListXAttrResponse {
+  repeated string names = 1;
+}
+
+message RemoveXAttrRequest {
+  uint64 inode = 1;
+  string name = 2;
+}
+
+message RemoveXAttrResponse {
+  bool success = 1;
+}
+
+message AcquireLockRequest {
+  uint64 inode = 1;
+  LockType type = 2;
+  uint64 owner_id = 3;
+  optional uint64 timeout_ms = 4;
+}
+
+enum LockType {
+  SHARED = 0;
+  EXCLUSIVE = 1;
+}
+
+message AcquireLockResponse {
+  bool success = 1;
+  optional string lock_token = 2;
+}
+
+message ReleaseLockRequest {
+  uint64 inode = 1;
+  string lock_token = 2;
+}
+
+message ReleaseLockResponse {
+  bool success = 1;
+}

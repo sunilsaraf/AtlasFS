@@ -1,0 +1,45 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    strategy:
+      matrix:
+        java: [ '11', '17', '21' ]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+        cache: maven
+    
+    - name: Build with Maven
+      run: mvn -B clean package --file pom.xml
+    
+    - name: Run tests
+      run: mvn -B test --file pom.xml
+    
+    - name: Upload build artifacts
+      if: matrix.java == '11'
+      uses: actions/upload-artifact@v4
+      with:
+        name: atlasfs-jars
+        path: |
+          atlasfs-server/target/*.jar
+          atlasfs-client/target/*.jar
+          atlasfs-proto/target/*.jar
+          atlasfs-common/target/*.jar
