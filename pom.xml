@@ -18,6 +18,7 @@
         <module>atlasfs-common</module>
         <module>atlasfs-server</module>
         <module>atlasfs-client</module>
+        <module>examples</module>
     </modules>
 
     <properties>
